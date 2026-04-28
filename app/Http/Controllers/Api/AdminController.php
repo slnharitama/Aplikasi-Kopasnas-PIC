@@ -15,10 +15,10 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'data' => $data], 200);
     }
 
-    public function store(Request $request)
+        public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:admins,username',
             'password' => 'required|string|min:6'
         ]);
 
@@ -26,13 +26,18 @@ class AdminController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
-        $data = Admin::create([
+        $admin = Admin::create([
             'username' => $request->username,
-            'password' => bcrypt($request->password)
+            'password' => bcrypt($request->password) // 🔥 wajib
         ]);
 
-        return response()->json(['success' => true, 'data' => $data], 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin berhasil dibuat',
+            'data' => $admin
+        ], 201);
     }
+
 
     public function show(string $id)
     {
@@ -45,8 +50,8 @@ class AdminController extends Controller
     public function update(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|max:255',
-            'password' => 'required|string|min:6'
+            'username' => 'required|string|max:255|unique:admins,username,' . $id,
+            'password' => 'nullable|string|min:6'
         ]);
 
         if ($validator->fails()) {
@@ -56,10 +61,15 @@ class AdminController extends Controller
         $data = Admin::find($id);
         if (!$data) return response()->json(['message' => 'Data tidak ditemukan'], 404);
 
-        $data->update([
+        $updateData = [
             'username' => $request->username,
-            'password' => bcrypt($request->password)
-        ]);
+        ];
+
+        if ($request->password) {
+            $updateData['password'] = bcrypt($request->password);
+        }
+
+        $data->update($updateData);
 
         return response()->json(['success' => true, 'data' => $data], 200);
     }
